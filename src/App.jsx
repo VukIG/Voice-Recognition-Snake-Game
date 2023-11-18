@@ -33,10 +33,10 @@ function App() {
       result => {
         console.log(result.scores);
         setAction(labels[argMax(Object.values(result.scores))]);
+        updateDirection(labels[argMax(Object.values(result.scores))]);
       },
-      { includeSpectogram: true, probabilityThreshold: 0.7 },
+      { includeSpectogram: true, probabilityThreshold: 0.9 },
     );
-    setTimeout(()=>model.stopListening(), 10e3)
   };
 
   const [snake, setSnake] = useState([
@@ -57,12 +57,8 @@ function App() {
   });
 
   useEffect(() => {
-    document.addEventListener('keydown', updateDirection);
-
-    const intervalId = setInterval(moveSnake, 150);
-
+    const intervalId = setInterval(moveSnake, 500);
     return () => {
-      document.removeEventListener('keydown', updateDirection);
       clearInterval(intervalId);
     };
   }, [direction, moveSnake]);
@@ -72,14 +68,19 @@ function App() {
   }, [snake, renderGame]);
 
   function updateDirection(event) {
-    if (event.key == 'ArrowUp' && direction.x != 1)
+    if (event== 'up' && direction.x != 1)
       setDirection({ x: -1, y: 0 });
-    else if (event.key == 'ArrowDown' && direction.x != -1)
+    else if (event == 'down' && direction.x != -1)
       setDirection({ x: 1, y: 0 });
-    else if (event.key == 'ArrowLeft' && direction.y != 1)
+    else if (event == 'left' && direction.y != 1)
       setDirection({ x: 0, y: -1 });
-    else if (event.key == 'ArrowRight' && direction.y != -1)
+    else if (event == 'right' && direction.y != -1)
       setDirection({ x: 0, y: 1 });
+    else if (event == 'stop'){
+      setDirection({x :0, y:0});
+      gameOver();
+      model.stopListening();
+    }
   }
 
   function isGameOver() {
@@ -191,10 +192,11 @@ function App() {
           />
         ))}
       </div>
-      <div className="text-4xl">{score}</div>
-      <div>
-        <button onClick={recordSpeech}>Speak</button>
-        <h1>{action}</h1>
+      <div className="text-4xl my-[-20px]">{score}</div>
+      <div className=' flex flex-col gap-3'>
+        <button className=' text-xl p-3 rounded bg-green-700 hover:bg-green-900 transition text-white' onClick={recordSpeech}>Press to speak</button>
+        <p className="text-small">Note * You can stop the recording by using the voice command: 'stop'</p>
+        <h1 className=' text-xl p-3'> Direction :{action}</h1>
       </div>
     </div>
   );
