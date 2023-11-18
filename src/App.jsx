@@ -1,8 +1,44 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import Field from './Field';
 import { useEffect, useState } from 'react';
+import * as speech from '@tensorflow-models/speech-commands';
+import '@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs';
 
 function App() {
+  tf.setBackend('webgl');
+
+  function argMax(arr){
+    return arr.map((x, i) => [x, i]).reduce((r, a) => (a[0] > r[0] ? a : r))[1];
+  } 
+
+  const [model, setModel] = useState(null);
+  const [action, setAction] = useState(null);
+  const [labels, setLabels] = useState(null);
+
+  const loadModel = async () => {
+    const recognizer = await speech.create('BROWSER_FFT');
+    await recognizer.ensureModelLoaded();
+    console.log(recognizer.wordLabels());
+    setModel(recognizer);
+    setLabels(recognizer.wordLabels());
+  };
+
+  useEffect(() => {
+    loadModel();
+  }, []);
+
+  const recordSpeech = async () => {
+    model.listen(
+      result => {
+        console.log(result.scores);
+        setAction(labels[argMax(Object.values(result.scores))]);
+      },
+      { includeSpectogram: true, probabilityThreshold: 0.7 },
+    );
+    setTimeout(()=>model.stopListening(), 10e3)
+  };
+
   const [snake, setSnake] = useState([
     {
       x: 7,
@@ -156,6 +192,10 @@ function App() {
         ))}
       </div>
       <div className="text-4xl">{score}</div>
+      <div>
+        <button onClick={recordSpeech}>Speak</button>
+        <h1>{action}</h1>
+      </div>
     </div>
   );
 }
